@@ -1,0 +1,110 @@
+Step 1: Create a Logging Service to Send Logs
+csharp
+Copy
+Edit
+public static class EventLoggerService
+{
+    private static readonly HttpClient client = new HttpClient();
+
+    public static async Task LogEventAsync(object logData)
+    {
+        var json = JsonConvert.SerializeObject(logData);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        // Replace with your real endpoint
+        var endpointUrl = "https://your-event-logger-api.com/api/event-logs";
+
+        try
+        {
+            await client.PostAsync(endpointUrl, content);
+        }
+        catch (Exception ex)
+        {
+            // Optionally handle failed logging attempts
+            Console.WriteLine($"Logging failed: {ex.Message}");
+        }
+    }
+}
+✅ Step 2: Global Action Filter to Log All HTTP Requests
+Create a class like:
+
+csharp
+Copy
+Edit
+public class GlobalLoggingFilter : ActionFilterAttribute
+{
+    public override void OnActionExecuting(ActionExecutingContext filterContext)
+    {
+        var request = filterContext.HttpContext.Request;
+
+        var log = new
+        {
+            event_id = Guid.NewGuid().ToString(),
+            log_level_id = 1, // INFO
+            event_type_id = 2, // e.g., Request
+            message = $"Incoming request to {request.RawUrl}",
+            method = request.HttpMethod,
+            endpoint = request.RawUrl,
+            source = "ASP.NET MVC",
+            timestamp = DateTime.UtcNow,
+            environment_id = 3, // e.g., Production
+            client_ip = request.UserHostAddress,
+            user_agent = request.UserAgent,
+            user_id = filterContext.HttpContext.User.Identity.Name ?? "Anonymous"
+        };
+
+        EventLoggerService.LogEventAsync(log); // Fire and forget
+    }
+}
+Then register it globally in FilterConfig.cs:
+
+csharp
+Copy
+Edit
+public class FilterConfig
+{
+    public static void RegisterGlobalFilters(GlobalFilterCollection filters)
+    {
+        filters.Add(new GlobalLoggingFilter());
+    }
+}
+✅ Step 3: Global Exception Filter to Log All Errors
+Create:
+
+csharp
+Copy
+Edit
+public class GlobalExceptionLogger : FilterAttribute, IExceptionFilter
+{
+    public void OnException(ExceptionContext filterContext)
+    {
+        var exception = filterContext.Exception;
+        var request = filterContext.HttpContext.Request;
+
+        var log = new
+        {
+            event_id = Guid.NewGuid().ToString(),
+            log_level_id = 3, // ERROR
+            event_type_id = 1, // Exception
+            message = exception.Message,
+            exception_type = exception.GetType().ToString(),
+            stack_trace = exception.StackTrace,
+            method = request.HttpMethod,
+            endpoint = request.RawUrl,
+            source = "ASP.NET MVC",
+            timestamp = DateTime.UtcNow,
+            environment_id = 3,
+            client_ip = request.UserHostAddress,
+            user_agent = request.UserAgent,
+            user_id = filterContext.HttpContext.User.Identity.Name ?? "Anonymous"
+        };
+
+        EventLoggerService.LogEventAsync(log);
+    }
+}
+And add it to global filters:
+
+csharp
+Copy
+Edit
+filters.Add(new GlobalExceptionLogger());

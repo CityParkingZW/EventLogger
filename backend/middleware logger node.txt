@@ -1,0 +1,77 @@
+const axios = require("axios");
+
+const eventLoggerUrl = "http://your-event-logger-api.com/api/event-logs";
+
+const logEvent = async (logData) => {
+  try {
+    await axios.post(eventLoggerUrl, logData);
+  } catch (error) {
+    console.error("Failed to send log:", error.message);
+  }
+};
+
+// Logs all HTTP requests
+const requestLogger = (req, res, next) => {
+  const log = {
+    event_id: Date.now().toString(),
+    log_level_id: 1, // INFO
+    event_type_id: 2, // HTTP Request
+    message: `Incoming ${req.method} request to ${req.originalUrl}`,
+    method: req.method,
+    endpoint: req.originalUrl,
+    source: "Node.js API",
+    timestamp: new Date().toISOString(),
+    client_ip: req.ip,
+    user_agent: req.headers["user-agent"],
+    environment_id: 3,
+    user_id: req.user?.id || null, // if using auth middleware
+  };
+
+  logEvent(log);
+  next();
+};
+
+// Logs uncaught exceptions
+const errorLogger = (err, req, res, next) => {
+  const log = {
+    event_id: Date.now().toString(),
+    log_level_id: 3, // ERROR
+    event_type_id: 1, // Exception
+    message: err.message,
+    exception_type: err.name,
+    stack_trace: err.stack,
+    method: req.method,
+    endpoint: req.originalUrl,
+    source: "Node.js API",
+    timestamp: new Date().toISOString(),
+    client_ip: req.ip,
+    user_agent: req.headers["user-agent"],
+    environment_id: 3,
+    user_id: req.user?.id || null,
+  };
+
+  logEvent(log);
+  next(err);
+};
+
+module.exports = {
+  requestLogger,
+  errorLogger,
+};
+Register Middleware in app.js
+js
+Copy
+Edit
+const express = require("express");
+const { requestLogger, errorLogger } = require("./middlewares/logger");
+
+const app = express();
+
+app.use(express.json());
+app.use(requestLogger);
+
+// ... define your routes here
+
+app.use(errorLogger); // place after routes
+
+app.listen(3000, () => console.log("Node app running on port 3000"));

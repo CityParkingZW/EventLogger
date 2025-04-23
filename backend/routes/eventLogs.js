@@ -1,7 +1,10 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const eventLogsController = require('../controllers/eventLogsController');
+const controller = require("../controllers/eventLogsController");
 
-router.post('/', eventLogsController.create);
+router.get("/", controller.getAll);
+router.get("/:id", controller.getById);
+router.post("/", controller.create);
+router.delete("/:id", controller.delete);
 
 module.exports = router;
