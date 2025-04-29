@@ -39,6 +39,7 @@ const EventLog = {
       .input("error_code", sql.VarChar, data.error_code)
       .input("response_time", sql.Int, data.response_time)
       .input("method", sql.VarChar, data.method)
+      .input("outcome", sql.VarChar, data.outcome)
       .input("endpoint", sql.Text, data.endpoint)
       .input("authentication_method", sql.VarChar, data.authentication_method)
       .input("failure_reason", sql.Text, data.failure_reason)
@@ -53,13 +54,13 @@ const EventLog = {
     event_type_id, message, user_id, client_ip, mac_address, user_agent,
     exception_type, error_code, response_time, method, endpoint,
     authentication_method, failure_reason, correlation_id, 
-    transaction_id, source, environment_id
+    transaction_id, source, environment_id,outcome
 ) VALUES (
     GETDATE(), @log_level_id, @service_id, @application_id,
     @event_type_id, @message, @user_id, @client_ip, @mac_address, @user_agent,
     @exception_type, @error_code, @response_time, @method, @endpoint,
     @authentication_method, @failure_reason, @correlation_id,
-    @transaction_id, @source, @environment_id
+    @transaction_id, @source, @environment_id,@outcome
 );
 
     `);

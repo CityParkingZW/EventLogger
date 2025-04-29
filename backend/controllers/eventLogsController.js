@@ -38,6 +38,7 @@ const controller = {
         response_time: body.response_time || 0,
         method: body.method,
         endpoint: body.endpoint,
+        outcome: body.outcome,
         authentication_method: body.authentication_method || "Unknown",
         failure_reason: body.failure_reason || null,
         source: body.source || "Unspecified App",
